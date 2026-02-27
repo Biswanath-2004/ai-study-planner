@@ -7,8 +7,3 @@ data = {
     "score": [50, 60, 65, 70, 80, 85, 55, 60, 75, 90]
 }
 
-df = pd.DataFrame(data)
-
-df.to_csv("student_study_data.csv", index=False)
-
-print("✅ Dataset created")

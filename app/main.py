@@ -42,3 +42,37 @@ def test_db():
     collection = db["test"]
     collection.insert_one({"name": "Biswanath"})
     return {"message": "Inserted"}
+
+
+
+from fastapi import FastAPI
+import joblib
+import numpy as np
+import pandas as pd
+
+app = FastAPI()
+
+# 🧠 Load trained ML model
+model = joblib.load("ml_model/study_model.pkl")
+
+
+@app.get("/")
+def home():
+    return {"message": "AI Study Planner with ML is running 🚀"}
+
+
+# 🤖 Prediction API
+@app.get("/predict")
+def predict(study_hours: int, days_left: int, difficulty: int):
+
+    input_data = pd.DataFrame([{
+    "study_hours": study_hours,
+    "days_left": days_left,
+    "difficulty": difficulty
+}])
+
+    prediction = model.predict(input_data)
+
+    return {
+        "recommended_study_hours": round(prediction[0], 2)
+    }
