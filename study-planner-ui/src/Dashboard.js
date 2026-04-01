@@ -18,10 +18,10 @@ function Dashboard({ user = "Guest" }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 🔥 IMPORTANT: CHANGE THIS TO YOUR RENDER URL
+  // ✅ YOUR BACKEND URL (DEPLOYED)
   const BASE_URL = "https://ai-study-planner-8gfo.onrender.com";
 
-  // ✅ GENERATE PLAN
+  // ✅ GENERATE PLAN (FIXED)
   const generatePlan = async () => {
     const subjectList = subjects.split(",").map((s) => s.trim());
     const difficultyList = difficulty.split(",").map((d) => d.trim());
@@ -34,7 +34,8 @@ function Dashboard({ user = "Guest" }) {
     try {
       setLoading(true);
 
-      const response = await fetch(`${BASE_URL}/generate-full-plan`, {
+      const response = await fetch(`${BASE_URL}/generate-plan`, {
+        // ✅ FIXED ENDPOINT
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -48,6 +49,12 @@ function Dashboard({ user = "Guest" }) {
       });
 
       const data = await response.json();
+
+      if (data.error) {
+        alert("Error from backend ❌");
+        return;
+      }
+
       setResult(data);
     } catch (error) {
       alert("Backend not connected ❌");
@@ -56,7 +63,7 @@ function Dashboard({ user = "Guest" }) {
     }
   };
 
-  // ✅ CLEAR FORM
+  // ✅ CLEAR
   const clearForm = () => {
     setSubjects("");
     setDays("");
@@ -65,23 +72,19 @@ function Dashboard({ user = "Guest" }) {
     setResult(null);
   };
 
-  // ✅ CHART DATA
-  const chartData = result?.study_hours
-    ? Object.entries(result.study_hours).map(([name, value]) => ({
-        name,
-        value,
-      }))
-    : [];
+  // ✅ CHART DATA (FIXED)
+  const chartData = result?.subject_wise_hours ? Object.entries(result.subject_wise_hours).map(([name, value]) => ({
+      name,
+      value: parseFloat(value),
+    })) : [];
 
   return (
     <div style={styles.appContainer}>
-      {/* HEADER */}
       <header style={styles.header}>
         <h1 style={styles.logo}>📚 AI Study Planner</h1>
         <p>Welcome {user} 👋</p>
       </header>
 
-      {/* TABS */}
       <nav style={styles.tabNav}>
         <button
           style={{
@@ -134,7 +137,7 @@ function Dashboard({ user = "Guest" }) {
 
             <input
               style={styles.input}
-              placeholder="Difficulty (1,2,3)"
+              placeholder="Difficulty (1,2)"
               value={difficulty}
               onChange={(e) => setDifficulty(e.target.value)}
             />
@@ -147,27 +150,33 @@ function Dashboard({ user = "Guest" }) {
               Clear
             </button>
 
+            {loading && <p>⏳ Generating...</p>}
+
             {/* RESULT */}
             {result && (
               <>
-                <h3>📊 Study Chart</h3>
+                <h3>📊 Study Plan</h3>
 
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData}>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#667eea" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {result.plan.map((day, index) => (
+                  <div key={index}>
+                    <b>{Object.keys(day)[0]}</b>
+                    <pre>{JSON.stringify(day, null, 2)}</pre>
+                  </div>
+                ))}
 
-                <h3>📅 Timetable</h3>
-                {Object.entries(result["7_day_plan"] || {}).map(
-                  ([day, info]) => (
-                    <p key={day}>
-                      {day}: {info.subject} ({info.hours} hrs)
-                    </p>
-                  )
+                {/* STUDY HOURS CHART */}
+                {chartData.length > 0 && (
+                  <div style={{ marginTop: "30px" }}>
+                    <h3>📈 Subject-wise Study Hours</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={chartData}>
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#667eea" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
               </>
             )}

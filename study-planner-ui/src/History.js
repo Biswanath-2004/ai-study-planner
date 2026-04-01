@@ -10,10 +10,13 @@ function History({ user }) {
     fetchHistory();
   }, []);
 
+  // ✅ YOUR BACKEND URL (DEPLOYED)
+  const BASE_URL = "https://ai-study-planner-8gfo.onrender.com";
+
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/history?username=${user}`);
+      const response = await fetch(`${BASE_URL}/history?username=${user}`);
 
       const data = await response.json();
       setPlans(data.history || []);
@@ -31,7 +34,7 @@ function History({ user }) {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/plans/${planId}?username=${user}`,
+        `${BASE_URL}/plans/${planId}?username=${user}`,
         {
           method: "DELETE",
         }

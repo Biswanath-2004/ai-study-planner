@@ -17,10 +17,7 @@ load_dotenv()
 app = FastAPI()
 
 # CORS (VERY IMPORTANT)
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,7 +35,7 @@ client = MongoClient(mongo_url)
 db = client["ai_study_planner"]
 
 # ML Model
-model = joblib.load("ml_model/study_model.pkl")
+# model = joblib.load("ml_model/study_model.pkl")
 
 # ---------------- HELPER FUNCTIONS ----------------
 
@@ -55,7 +52,6 @@ def simple_timetable(subjects, days):
 # ---------------- REQUEST MODELS ----------------
 
 class StudyPlanRequest(BaseModel):
-    username: str
     subjects: List[str]
     days_left: int
     total_hours: float
@@ -76,31 +72,43 @@ class StudyPlanRequest(BaseModel):
 def home():
     return {"message": "AI Study Planner is running 🚀"}
 
+@app.post("/login")
+def login(data: dict):
+    username = data.get("username")
+    password = data.get("password")
+    # Simple check, in real app use proper auth
+    if username and password:
+        return {"message": "Login success"}
+    return {"message": "Login failed"}
+
 
 
 
 
 # ---------------- ML PREDICT ----------------
 
-@app.get("/predict")
-def predict(study_hours: int, days_left: int, difficulty: int):
-    input_data = np.array([[study_hours, days_left, difficulty]])
-    prediction = model.predict(input_data)
+# @app.get("/predict")
+# def predict(study_hours: int, days_left: int, difficulty: int):
+#     input_data = np.array([[study_hours, days_left, difficulty]])
+#     prediction = model.predict(input_data)
 
-    return {"recommended_study_hours": round(prediction[0], 2)}
+#     return {"recommended_study_hours": round(prediction[0], 2)}
 
 # ---------------- SIMPLE PLAN ----------------
 
 @app.post("/generate-plan")
 def generate_plan(data: StudyPlanRequest):
-    study_plan = {}
+    subject_plan, timetable = rule_based_plan(
+        data.subjects,
+        data.total_hours,
+        data.days_left
+    )
 
-    for subject, difficulty in zip(data.subjects, data.difficulties):
-        input_data = np.array([[2, data.days_left, difficulty]])
-        prediction = model.predict(input_data)
-        study_plan[subject] = round(prediction[0], 2)
+    plan = []
+    for day, plan_data in timetable.items():
+        plan.append({day: plan_data})
 
-    return {"your_personalized_study_plan": study_plan}
+    return {"plan": plan, "subject_wise_hours": subject_plan}
 
 # ---------------- RULE-BASED PLAN ----------------
 
@@ -141,37 +149,37 @@ def create_study_plan(data: StudyPlanRequest):
     }
 
 # ✅ AUTHENTICATED FULL PLAN GENERATION WITH TIMESTAMPS
-@app.post("/generate-full-plan")
-def generate_full_plan(data: StudyPlanRequest):
+# @app.post("/generate-full-plan")
+# def generate_full_plan(data: StudyPlanRequest):
 
-    study_plan = {}
+#     study_plan = {}
 
-    for subject, difficulty in zip(data.subjects, data.difficulties):
-        input_data = np.array([[2, data.days_left, difficulty]])
-        prediction = model.predict(input_data)
-        study_plan[subject] = round(prediction[0], 2)
+#     for subject, difficulty in zip(data.subjects, data.difficulties):
+#         input_data = np.array([[2, data.days_left, difficulty]])
+#         prediction = model.predict(input_data)
+#         study_plan[subject] = round(prediction[0], 2)
 
-    timetable = simple_timetable(data.subjects, data.days_left)
+#     timetable = simple_timetable(data.subjects, data.days_left)
 
-    # ✅ SAVE WITH USER AND TIMESTAMP
-    plan_doc = {
-        "username": data.username,
-        "subjects": data.subjects,
-        "study_plan": study_plan,
-        "timetable": timetable,
-        "days_left": data.days_left,
-        "total_hours": data.total_hours,
-        "created_at": datetime.utcnow().isoformat(),
-        "plan_id": str(int(datetime.utcnow().timestamp() * 1000))
-    }
-    db["plans"].insert_one(plan_doc)
+#     # ✅ SAVE WITH USER AND TIMESTAMP
+#     plan_doc = {
+#         "username": username,
+#         "subjects": data.subjects,
+#         "study_plan": study_plan,
+#         "timetable": timetable,
+#         "days_left": data.days_left,
+#         "total_hours": data.total_hours,
+#         "created_at": datetime.utcnow().isoformat(),
+#         "plan_id": str(int(datetime.utcnow().timestamp() * 1000))
+#     }
+#     db["plans"].insert_one(plan_doc)
 
-    return {
-        "study_hours": study_plan,
-        "7_day_plan": timetable,
-        "plan_id": plan_doc["plan_id"],
-        "created_at": plan_doc["created_at"]
-    }
+#     return {
+#         "study_hours": study_plan,
+#         "7_day_plan": timetable,
+#         "plan_id": plan_doc["plan_id"],
+#         "created_at": plan_doc["created_at"]
+#     }
 
 @app.get("/history")
 def get_history(username: str):
