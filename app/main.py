@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional
 import numpy as np
 import joblib
@@ -57,11 +57,11 @@ class StudyPlanRequest(BaseModel):
     total_hours: float
     difficulties: List[int]
 
-    @field_validator("difficulties")
-    def check_length(cls, v, values):
-        if len(v) != len(values.data["subjects"]):
+    @model_validator(mode='after')
+    def check_lengths(self):
+        if len(self.difficulties) != len(self.subjects):
             raise ValueError("subjects and difficulties must match")
-        return v
+        return self
 
 
 
