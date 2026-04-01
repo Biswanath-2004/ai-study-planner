@@ -55,6 +55,7 @@ def simple_timetable(subjects, days):
 # ---------------- REQUEST MODELS ----------------
 
 class StudyPlanRequest(BaseModel):
+    username: str
     subjects: List[str]
     days_left: int
     total_hours: float
@@ -154,7 +155,7 @@ def generate_full_plan(data: StudyPlanRequest):
 
     # ✅ SAVE WITH USER AND TIMESTAMP
     plan_doc = {
-        "username": username,
+        "username": data.username,
         "subjects": data.subjects,
         "study_plan": study_plan,
         "timetable": timetable,
