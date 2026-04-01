@@ -57,11 +57,11 @@ class StudyPlanRequest(BaseModel):
     total_hours: float
     difficulties: List[int]
 
-    @model_validator(mode='after')
-    def check_lengths(self):
-        if len(self.difficulties) != len(self.subjects):
-            raise ValueError("subjects and difficulties must match")
-        return self
+    # @model_validator(mode='after')
+    # def check_lengths(self):
+    #     if len(self.difficulties) != len(self.subjects):
+    #         raise ValueError("subjects and difficulties must match")
+    #     return self
 
 
 
