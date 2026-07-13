@@ -1,8 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional
-import numpy as np
-import joblib
+
+# Optional ML imports — make them non-fatal so backend can run without heavy deps
+try:
+    import numpy as np
+except Exception:
+    np = None
+
+try:
+    import joblib
+except Exception:
+    joblib = None
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
@@ -30,9 +39,17 @@ app.add_middleware(
 
 
 # MongoDB
-mongo_url = os.getenv("MONGODB_URL")
-client = MongoClient(mongo_url)
-db = client["ai_study_planner"]
+mongo_url = os.getenv("MONGODB_URL") or "mongodb://localhost:27017/"
+db_name = os.getenv("DB_NAME") or "ai_study_planner"
+try:
+    client = MongoClient(mongo_url, serverSelectionTimeoutMS=5000)
+    # Trigger a server selection to raise early if unreachable
+    client.server_info()
+    db = client[db_name]
+except Exception:
+    # Fall back to a local MongoDB instance if available
+    client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+    db = client[db_name]
 
 # ML Model
 # model = joblib.load("ml_model/study_model.pkl")
@@ -71,6 +88,17 @@ class StudyPlanRequest(BaseModel):
 @app.get("/")
 def home():
     return {"message": "AI Study Planner is running 🚀"}
+
+
+@app.get("/health")
+def health():
+    try:
+        # simple ping to DB
+        client.admin.command("ping")
+        db_status = True
+    except Exception:
+        db_status = False
+    return {"status": "ok", "db_connected": db_status}
 
 @app.post("/login")
 def login(data: dict):
