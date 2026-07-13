@@ -19,7 +19,7 @@ function Dashboard({ user = "Guest" }) {
   const [loading, setLoading] = useState(false);
 
   // ✅ YOUR BACKEND URL (use env var for dev/prod)
-  const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+  const BASE_URL = process.env.REACT_APP_API_URL || "https://ai-study-planner-8gfo.onrender.com";
 
   // ✅ GENERATE PLAN (FIXED)
   const generatePlan = async () => {
